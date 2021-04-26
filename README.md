@@ -33,6 +33,8 @@ The site is built and deployed to: [gerald.host/ktycat](https://gerald.host/ktyc
 
 Make sure you meta mask is connected to cheapeth: [view wallet setup](https://cheapeth.org/metamask.html)
 
+You can get KTYCAT from cheapswap [here](https://cheapswap.io/#/swap/0x73b1736107bC2Bf1eD9EE10397a6c19321A011c8)
+
 <img width="600" alt="headphone-kitty-cat" src="https://user-images.githubusercontent.com/23342939/116082263-1c4ace80-a693-11eb-9205-5341713770b4.png">
 
 ## Get it running
