@@ -1,6 +1,6 @@
 # Headphone Kitty Cat
 
-Dapp for sharing music as NFTs
+### Dapp for sharing music tracks as NFTs
 
 This is just a proof of concept to play around with "what else can we do with NFTs".
 This idea would solve transparency issues in the music industry regarding royalties.
@@ -20,10 +20,18 @@ Is done in the client. In reality you would want to sync your own node and do th
 the server. You would also probably want to get the address to sign a random string each time
 they want to listen to a track.
 
-There are two simple contracts:
+There are two contracts:
 
-- ERC20 token $kittycat used to purchase access to tracks
+- ERC20 token $KTYCAT used to purchase access to tracks
 - ERC721 NFT used to represent a single track.
+
+Both these contracts are deployed on the cheapeth network
+- erc20: `0x73b1736107bC2Bf1eD9EE10397a6c19321A011c8`
+- erc721: `0x5E6b712dEb7605fD0C40B9e1abb4EE1ba5d514E1`
+
+The site is built and deployed to: [gerald.host/ktycat](https://gerald.host/ktycat)
+
+Make sure you meta mask is connected to cheapeth: [view wallet setup](https://cheapeth.org/metamask.html)
 
 <img width="600" alt="headphone-kitty-cat" src="https://user-images.githubusercontent.com/23342939/116082263-1c4ace80-a693-11eb-9205-5341713770b4.png">
 
