@@ -6,4 +6,4 @@ node_modules
 cache
 artifacts
 
-public/build/
+public/build

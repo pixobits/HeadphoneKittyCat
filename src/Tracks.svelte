@@ -1,12 +1,12 @@
 <script>
   import { playing } from "./utils/player-store.js";
   import { web3, connected, selectedAccount, erc721 } from "./utils/web3-store";
-  
+
   // You would obviously do this on the server and likely want to connect to
   // your own node rather than relying on some other node to be honest.
   // For this POC we can just do this in the client but essentially to see if
   // somebody has payed for a track (NFT) you would just look through the event
-  // history for that contract. 
+  // history for that contract.
   const getPastBuyTrack = async () => {
     const resp = await $erc721.getPastEvents("BuyTrack", {
       fromBlock: 12240000,
@@ -30,7 +30,7 @@
 
   $: account = $selectedAccount || "0x0000000000000000000000000000000000000000";
   $: bought = $selectedAccount ? getPastBuyTrack() : Promise.resolve([]);
-  $: tracks = $selectedAccount ? getTracks() : Promise.resolve([]);
+  $: tracks = $connected ? getTracks() : Promise.resolve([]);
 
   const handleBuyTrack = (trackId) => () => {
     trackId = trackId.toString();
@@ -41,7 +41,7 @@
   const handlePlayTrack = (track) => () => {
     playing.set(track);
   };
-  
+
   //const handleMintTrack = () => {
   //  $erc721.methods
   //    .mintTrack("Kitty", "Kitty Cat ft(headphones)", "http://fake-streaming")

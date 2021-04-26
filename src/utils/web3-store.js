@@ -10,7 +10,9 @@ export const createStore = () => {
   });
 
   const init = () => {
-    window.ethereum.autoRefreshOnNetworkChange = false;
+    if (window.ethereum) {
+      window.ethereum.autoRefreshOnNetworkChange = false;
+    }
   };
 
   const setProvider = async (provider) => {
@@ -79,7 +81,9 @@ export const erc721 = derived(ethStore, ($ethStore) => {
   );
 });
 
-export const chainId = derived(ethStore, ($ethStore) => Number($ethStore.chainId));
+export const chainId = derived(ethStore, ($ethStore) =>
+  Number($ethStore.chainId)
+);
 
 export const web3 = derived(ethStore, ($ethStore) => {
   if (!$ethStore.instance) return { utils: Web3.utils, version: Web3.version };

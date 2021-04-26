@@ -5,7 +5,6 @@
   import Player from "./Player.svelte";
 
   import { ethStore, chainId } from "./utils/web3-store";
-  $: console.log($chainId);
 
   const enable = () => ethStore.setProvider("https://node.cheapeth.org/rpc");
   const enableBrowser = () => ethStore.setBrowserProvider();
