@@ -4,8 +4,6 @@ import { config } from "../config";
 import { derived, writable } from "svelte/store";
 
 export const createStore = () => {
-  let erc20;
-
   const { subscribe, set } = writable({
     connected: false,
     accounts: [],
@@ -13,13 +11,6 @@ export const createStore = () => {
 
   const init = () => {
     window.ethereum.autoRefreshOnNetworkChange = false;
-  };
-
-  const getErc20 = async () => {
-    if (!erc20) {
-      erc20 = await new Web3.eth.Contract(config.erc20Abi, config.erc20Addr);
-    }
-    return erc20;
   };
 
   const setProvider = async (provider) => {
@@ -36,13 +27,6 @@ export const createStore = () => {
     });
   };
 
-  const updateAccounts = async () => {
-    const resp = await window.ethereum.request({
-      method: "eth_requestAccounts",
-    });
-    set({ accounts: resp });
-  };
-
   const setBrowserProvider = async () => {
     if (!window.ethereum) {
       throw new Error(
@@ -52,8 +36,8 @@ export const createStore = () => {
     const res = await window.ethereum.request({
       method: "eth_requestAccounts",
     });
-    window.ethereum.on("accountsChanged", updateAccounts);
-    window.ethereum.on("chainChanged", updateAccounts);
+    window.ethereum.on("accountsChanged", setBrowserProvider);
+    window.ethereum.on("chainChanged", setBrowserProvider);
     set({
       provider: window.ethereum,
       providerType: "Browser",
@@ -65,7 +49,6 @@ export const createStore = () => {
   };
 
   return {
-    getErc20,
     setBrowserProvider,
     setProvider,
     subscribe,
@@ -81,8 +64,19 @@ export const selectedAccount = derived(ethStore, ($ethStore) =>
 export const connected = derived(ethStore, ($ethStore) => $ethStore.connected);
 
 export const erc20 = derived(ethStore, ($ethStore) => {
-  if(!$ethStore.instance) return null;
-  return new $ethStore.instance.eth.Contract(config.erc20Abi, config.erc20Address);
+  if (!$ethStore.instance) return null;
+  return new $ethStore.instance.eth.Contract(
+    config.erc20Abi,
+    config.erc20Address
+  );
+});
+
+export const erc721 = derived(ethStore, ($ethStore) => {
+  if (!$ethStore.instance) return null;
+  return new $ethStore.instance.eth.Contract(
+    config.erc721Abi,
+    config.erc721Address
+  );
 });
 
 export const chainId = derived(ethStore, ($ethStore) => $ethStore.chainId);
@@ -91,4 +85,3 @@ export const web3 = derived(ethStore, ($ethStore) => {
   if (!$ethStore.instance) return { utils: Web3.utils, version: Web3.version };
   return $ethStore.instance;
 });
-

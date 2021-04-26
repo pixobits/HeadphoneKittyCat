@@ -11,9 +11,7 @@ contract ERC721_KittyCat is ERC721, Ownable {
 
   Counters.Counter private _trackIds;
 
-  address private constant KTYCAT = 0xe1287197026Eb16138B9A49572D08291f946A96e;
-
-  IERC20 private constant _kittyCatToken = IERC20(KTYCAT);
+  IERC20 private _kittyCatToken;
 
   // Value of track in KTYCAT
   uint256 private constant _trackValue = 0.1 ether;
@@ -35,6 +33,10 @@ contract ERC721_KittyCat is ERC721, Ownable {
   event BuyTrack(uint256 tokenId, address addr, uint256 timestamp);
 
   constructor() ERC721("KittyCat", "KTYCAT") {}
+
+  function initKtyCat(address erc20Addr) external onlyOwner {
+    _kittyCatToken = IERC20(erc20Addr);
+  }
 
   function mintTrack(
     string memory artist,

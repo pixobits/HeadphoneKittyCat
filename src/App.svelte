@@ -2,22 +2,29 @@
   import { onMount } from "svelte";
   import Header from "./Header.svelte";
   import Tracks from "./Tracks.svelte";
+  import Player from "./Player.svelte";
 
-  import { ethStore } from './utils/web3-store';
+  import { ethStore } from "./utils/web3-store";
 
-  const enable = () => ethStore.setProvider("https://node.cheapeth.org/rpc")
-  const enableBrowser = () => ethStore.setBrowserProvider()
+  const enable = () => ethStore.setProvider("https://node.cheapeth.org/rpc");
+  const enableBrowser = () => ethStore.setBrowserProvider();
 
   onMount(async () => {
     await enable();
     await enableBrowser();
   });
-
 </script>
 
 <main>
-  <h1>😻 Headphone Kitty Cat</h1>
+  <h1><img class="logo" src="/logo.png" />Headphone Kitty Cat</h1>
+  <p>
+    <a href="https://github.com/GeraldHost/HeadphoneKittyCat" target="_blank"
+      >What is this? Read the README.md</a
+    >
+  </p>
   <Header />
+  <h2>Now Playing</h2>
+  <Player />
   <h2>Tracks</h2>
   <Tracks />
 </main>
@@ -42,8 +49,11 @@
     font-size: 2em;
   }
 
-  .text-center {
-    text-align: center;
+  .logo {
+    display: inline-block;
+    width: 50px;
+    vertical-align: middle;
+    margin-right: 15px;
   }
 
   :global(.code) {

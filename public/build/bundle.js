@@ -73,6 +73,10 @@ var app = (function () {
     function empty() {
         return text('');
     }
+    function listen(node, event, handler, options) {
+        node.addEventListener(event, handler, options);
+        return () => node.removeEventListener(event, handler, options);
+    }
     function attr(node, attribute, value) {
         if (value == null)
             node.removeAttribute(attribute);
@@ -414,6 +418,19 @@ var app = (function () {
         dispatch_dev('SvelteDOMRemove', { node });
         detach(node);
     }
+    function listen_dev(node, event, handler, options, has_prevent_default, has_stop_propagation) {
+        const modifiers = options === true ? ['capture'] : options ? Array.from(Object.keys(options)) : [];
+        if (has_prevent_default)
+            modifiers.push('preventDefault');
+        if (has_stop_propagation)
+            modifiers.push('stopPropagation');
+        dispatch_dev('SvelteDOMAddEventListener', { node, event, handler, modifiers });
+        const dispose = listen(node, event, handler, options);
+        return () => {
+            dispatch_dev('SvelteDOMRemoveEventListener', { node, event, handler, modifiers });
+            dispose();
+        };
+    }
     function attr_dev(node, attribute, value) {
         attr(node, attribute, value);
         if (value == null)
@@ -465,486 +482,499 @@ var app = (function () {
     }
 
     var erc721Abi = [
-      {
-        inputs: [],
-        stateMutability: "nonpayable",
-        type: "constructor",
-      },
-      {
-        anonymous: false,
-        inputs: [
-          {
-            indexed: true,
-            internalType: "address",
-            name: "owner",
-            type: "address",
-          },
-          {
-            indexed: true,
-            internalType: "address",
-            name: "approved",
-            type: "address",
-          },
-          {
-            indexed: true,
-            internalType: "uint256",
-            name: "tokenId",
-            type: "uint256",
-          },
-        ],
-        name: "Approval",
-        type: "event",
-      },
-      {
-        anonymous: false,
-        inputs: [
-          {
-            indexed: true,
-            internalType: "address",
-            name: "owner",
-            type: "address",
-          },
-          {
-            indexed: true,
-            internalType: "address",
-            name: "operator",
-            type: "address",
-          },
-          {
-            indexed: false,
-            internalType: "bool",
-            name: "approved",
-            type: "bool",
-          },
-        ],
-        name: "ApprovalForAll",
-        type: "event",
-      },
-      {
-        anonymous: false,
-        inputs: [
-          {
-            indexed: false,
-            internalType: "uint256",
-            name: "tokenId",
-            type: "uint256",
-          },
-          {
-            indexed: false,
-            internalType: "address",
-            name: "addr",
-            type: "address",
-          },
-          {
-            indexed: false,
-            internalType: "uint256",
-            name: "timestamp",
-            type: "uint256",
-          },
-        ],
-        name: "BuyTrack",
-        type: "event",
-      },
-      {
-        anonymous: false,
-        inputs: [
-          {
-            indexed: false,
-            internalType: "uint256",
-            name: "tokenId",
-            type: "uint256",
-          },
-          {
-            indexed: false,
-            internalType: "string",
-            name: "artist",
-            type: "string",
-          },
-          {
-            indexed: false,
-            internalType: "string",
-            name: "name",
-            type: "string",
-          },
-          {
-            indexed: false,
-            internalType: "string",
-            name: "uri",
-            type: "string",
-          },
-        ],
-        name: "MintTrack",
-        type: "event",
-      },
-      {
-        anonymous: false,
-        inputs: [
-          {
-            indexed: true,
-            internalType: "address",
-            name: "previousOwner",
-            type: "address",
-          },
-          {
-            indexed: true,
-            internalType: "address",
-            name: "newOwner",
-            type: "address",
-          },
-        ],
-        name: "OwnershipTransferred",
-        type: "event",
-      },
-      {
-        anonymous: false,
-        inputs: [
-          {
-            indexed: true,
-            internalType: "address",
-            name: "from",
-            type: "address",
-          },
-          {
-            indexed: true,
-            internalType: "address",
-            name: "to",
-            type: "address",
-          },
-          {
-            indexed: true,
-            internalType: "uint256",
-            name: "tokenId",
-            type: "uint256",
-          },
-        ],
-        name: "Transfer",
-        type: "event",
-      },
-      {
-        inputs: [
-          {
-            internalType: "address",
-            name: "to",
-            type: "address",
-          },
-          {
-            internalType: "uint256",
-            name: "tokenId",
-            type: "uint256",
-          },
-        ],
-        name: "approve",
-        outputs: [],
-        stateMutability: "nonpayable",
-        type: "function",
-      },
-      {
-        inputs: [
-          {
-            internalType: "address",
-            name: "owner",
-            type: "address",
-          },
-        ],
-        name: "balanceOf",
-        outputs: [
-          {
-            internalType: "uint256",
-            name: "",
-            type: "uint256",
-          },
-        ],
-        stateMutability: "view",
-        type: "function",
-      },
-      {
-        inputs: [
-          {
-            internalType: "uint256",
-            name: "trackId",
-            type: "uint256",
-          },
-        ],
-        name: "buyTrack",
-        outputs: [],
-        stateMutability: "payable",
-        type: "function",
-      },
-      {
-        inputs: [
-          {
-            internalType: "uint256",
-            name: "tokenId",
-            type: "uint256",
-          },
-        ],
-        name: "getApproved",
-        outputs: [
-          {
-            internalType: "address",
-            name: "",
-            type: "address",
-          },
-        ],
-        stateMutability: "view",
-        type: "function",
-      },
-      {
-        inputs: [
-          {
-            internalType: "address",
-            name: "owner",
-            type: "address",
-          },
-          {
-            internalType: "address",
-            name: "operator",
-            type: "address",
-          },
-        ],
-        name: "isApprovedForAll",
-        outputs: [
-          {
-            internalType: "bool",
-            name: "",
-            type: "bool",
-          },
-        ],
-        stateMutability: "view",
-        type: "function",
-      },
-      {
-        inputs: [
-          {
-            internalType: "string",
-            name: "artist",
-            type: "string",
-          },
-          {
-            internalType: "string",
-            name: "name",
-            type: "string",
-          },
-          {
-            internalType: "string",
-            name: "uri",
-            type: "string",
-          },
-        ],
-        name: "mintTrack",
-        outputs: [],
-        stateMutability: "nonpayable",
-        type: "function",
-      },
-      {
-        inputs: [],
-        name: "name",
-        outputs: [
-          {
-            internalType: "string",
-            name: "",
-            type: "string",
-          },
-        ],
-        stateMutability: "view",
-        type: "function",
-      },
-      {
-        inputs: [],
-        name: "owner",
-        outputs: [
-          {
-            internalType: "address",
-            name: "",
-            type: "address",
-          },
-        ],
-        stateMutability: "view",
-        type: "function",
-      },
-      {
-        inputs: [
-          {
-            internalType: "uint256",
-            name: "tokenId",
-            type: "uint256",
-          },
-        ],
-        name: "ownerOf",
-        outputs: [
-          {
-            internalType: "address",
-            name: "",
-            type: "address",
-          },
-        ],
-        stateMutability: "view",
-        type: "function",
-      },
-      {
-        inputs: [],
-        name: "renounceOwnership",
-        outputs: [],
-        stateMutability: "nonpayable",
-        type: "function",
-      },
-      {
-        inputs: [
-          {
-            internalType: "address",
-            name: "from",
-            type: "address",
-          },
-          {
-            internalType: "address",
-            name: "to",
-            type: "address",
-          },
-          {
-            internalType: "uint256",
-            name: "tokenId",
-            type: "uint256",
-          },
-        ],
-        name: "safeTransferFrom",
-        outputs: [],
-        stateMutability: "nonpayable",
-        type: "function",
-      },
-      {
-        inputs: [
-          {
-            internalType: "address",
-            name: "from",
-            type: "address",
-          },
-          {
-            internalType: "address",
-            name: "to",
-            type: "address",
-          },
-          {
-            internalType: "uint256",
-            name: "tokenId",
-            type: "uint256",
-          },
-          {
-            internalType: "bytes",
-            name: "_data",
-            type: "bytes",
-          },
-        ],
-        name: "safeTransferFrom",
-        outputs: [],
-        stateMutability: "nonpayable",
-        type: "function",
-      },
-      {
-        inputs: [
-          {
-            internalType: "address",
-            name: "operator",
-            type: "address",
-          },
-          {
-            internalType: "bool",
-            name: "approved",
-            type: "bool",
-          },
-        ],
-        name: "setApprovalForAll",
-        outputs: [],
-        stateMutability: "nonpayable",
-        type: "function",
-      },
-      {
-        inputs: [
-          {
-            internalType: "bytes4",
-            name: "interfaceId",
-            type: "bytes4",
-          },
-        ],
-        name: "supportsInterface",
-        outputs: [
-          {
-            internalType: "bool",
-            name: "",
-            type: "bool",
-          },
-        ],
-        stateMutability: "view",
-        type: "function",
-      },
-      {
-        inputs: [],
-        name: "symbol",
-        outputs: [
-          {
-            internalType: "string",
-            name: "",
-            type: "string",
-          },
-        ],
-        stateMutability: "view",
-        type: "function",
-      },
-      {
-        inputs: [
-          {
-            internalType: "uint256",
-            name: "tokenId",
-            type: "uint256",
-          },
-        ],
-        name: "tokenURI",
-        outputs: [
-          {
-            internalType: "string",
-            name: "",
-            type: "string",
-          },
-        ],
-        stateMutability: "view",
-        type: "function",
-      },
-      {
-        inputs: [
-          {
-            internalType: "address",
-            name: "from",
-            type: "address",
-          },
-          {
-            internalType: "address",
-            name: "to",
-            type: "address",
-          },
-          {
-            internalType: "uint256",
-            name: "tokenId",
-            type: "uint256",
-          },
-        ],
-        name: "transferFrom",
-        outputs: [],
-        stateMutability: "nonpayable",
-        type: "function",
-      },
-      {
-        inputs: [
-          {
-            internalType: "address",
-            name: "newOwner",
-            type: "address",
-          },
-        ],
-        name: "transferOwnership",
-        outputs: [],
-        stateMutability: "nonpayable",
-        type: "function",
-      },
-    ];
+        {
+          "inputs": [],
+          "stateMutability": "nonpayable",
+          "type": "constructor"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "approved",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            }
+          ],
+          "name": "Approval",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "operator",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "bool",
+              "name": "approved",
+              "type": "bool"
+            }
+          ],
+          "name": "ApprovalForAll",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "addr",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "name": "BuyTrack",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "artist",
+              "type": "string"
+            },
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "uri",
+              "type": "string"
+            }
+          ],
+          "name": "MintTrack",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "from",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            }
+          ],
+          "name": "Transfer",
+          "type": "event"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            }
+          ],
+          "name": "approve",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            }
+          ],
+          "name": "balanceOf",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "trackId",
+              "type": "uint256"
+            }
+          ],
+          "name": "buyTrack",
+          "outputs": [],
+          "stateMutability": "payable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            }
+          ],
+          "name": "getApproved",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "erc20Addr",
+              "type": "address"
+            }
+          ],
+          "name": "initKtyCat",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "operator",
+              "type": "address"
+            }
+          ],
+          "name": "isApprovedForAll",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "string",
+              "name": "artist",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "uri",
+              "type": "string"
+            }
+          ],
+          "name": "mintTrack",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "name",
+          "outputs": [
+            {
+              "internalType": "string",
+              "name": "",
+              "type": "string"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "owner",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            }
+          ],
+          "name": "ownerOf",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "renounceOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "from",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            }
+          ],
+          "name": "safeTransferFrom",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "from",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_data",
+              "type": "bytes"
+            }
+          ],
+          "name": "safeTransferFrom",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "operator",
+              "type": "address"
+            },
+            {
+              "internalType": "bool",
+              "name": "approved",
+              "type": "bool"
+            }
+          ],
+          "name": "setApprovalForAll",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes4",
+              "name": "interfaceId",
+              "type": "bytes4"
+            }
+          ],
+          "name": "supportsInterface",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "symbol",
+          "outputs": [
+            {
+              "internalType": "string",
+              "name": "",
+              "type": "string"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            }
+          ],
+          "name": "tokenURI",
+          "outputs": [
+            {
+              "internalType": "string",
+              "name": "",
+              "type": "string"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "from",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            }
+          ],
+          "name": "transferFrom",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "transferOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ];
 
     var erc20Abi = [
         {
@@ -1231,9 +1261,9 @@ var app = (function () {
       ];
 
     const config = {
-      erc721Address: "0x5BbaA357B96F10b924A40a3A5a5A7E098a3648e8",
+      erc721Address: "0x5E6b712dEb7605fD0C40B9e1abb4EE1ba5d514E1",
       erc721Abi,
-      erc20Address: "0x413891312583bff99369B854819626E28d0b4c2E",
+      erc20Address: "0x73b1736107bC2Bf1eD9EE10397a6c19321A011c8",
       erc20Abi,
       trackValue: "100000000000000000", // 0.1 ether
     };
@@ -1407,8 +1437,6 @@ var app = (function () {
     }
 
     const createStore = () => {
-      let erc20;
-
       const { subscribe, set } = writable({
         connected: false,
         accounts: [],
@@ -1416,13 +1444,6 @@ var app = (function () {
 
       const init = () => {
         window.ethereum.autoRefreshOnNetworkChange = false;
-      };
-
-      const getErc20 = async () => {
-        if (!erc20) {
-          erc20 = await new Web3.eth.Contract(config.erc20Abi, config.erc20Addr);
-        }
-        return erc20;
       };
 
       const setProvider = async (provider) => {
@@ -1439,13 +1460,6 @@ var app = (function () {
         });
       };
 
-      const updateAccounts = async () => {
-        const resp = await window.ethereum.request({
-          method: "eth_requestAccounts",
-        });
-        set({ accounts: resp });
-      };
-
       const setBrowserProvider = async () => {
         if (!window.ethereum) {
           throw new Error(
@@ -1455,8 +1469,8 @@ var app = (function () {
         const res = await window.ethereum.request({
           method: "eth_requestAccounts",
         });
-        window.ethereum.on("accountsChanged", updateAccounts);
-        window.ethereum.on("chainChanged", updateAccounts);
+        window.ethereum.on("accountsChanged", setBrowserProvider);
+        window.ethereum.on("chainChanged", setBrowserProvider);
         set({
           provider: window.ethereum,
           providerType: "Browser",
@@ -1468,7 +1482,6 @@ var app = (function () {
       };
 
       return {
-        getErc20,
         setBrowserProvider,
         setProvider,
         subscribe,
@@ -1484,8 +1497,19 @@ var app = (function () {
     const connected = derived(ethStore, ($ethStore) => $ethStore.connected);
 
     const erc20 = derived(ethStore, ($ethStore) => {
-      if(!$ethStore.instance) return null;
-      return new $ethStore.instance.eth.Contract(config.erc20Abi, config.erc20Address);
+      if (!$ethStore.instance) return null;
+      return new $ethStore.instance.eth.Contract(
+        config.erc20Abi,
+        config.erc20Address
+      );
+    });
+
+    const erc721 = derived(ethStore, ($ethStore) => {
+      if (!$ethStore.instance) return null;
+      return new $ethStore.instance.eth.Contract(
+        config.erc721Abi,
+        config.erc721Address
+      );
     });
 
     derived(ethStore, ($ethStore) => $ethStore.chainId);
@@ -1497,15 +1521,15 @@ var app = (function () {
 
     /* src/Header.svelte generated by Svelte v3.37.0 */
 
-    const file$2 = "src/Header.svelte";
+    const file$3 = "src/Header.svelte";
 
     // (1:0) <script>   import { config }
-    function create_catch_block(ctx) {
+    function create_catch_block_2(ctx) {
     	const block = { c: noop, m: noop, p: noop, d: noop };
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_catch_block.name,
+    		id: create_catch_block_2.name,
     		type: "catch",
     		source: "(1:0) <script>   import { config }",
     		ctx
@@ -1514,9 +1538,9 @@ var app = (function () {
     	return block;
     }
 
-    // (21:34) {value}
-    function create_then_block(ctx) {
-    	let t_value = /*value*/ ctx[7] + "";
+    // (48:34) {value}
+    function create_then_block_2(ctx) {
+    	let t_value = /*value*/ ctx[11] + "";
     	let t;
 
     	const block = {
@@ -1527,7 +1551,7 @@ var app = (function () {
     			insert_dev(target, t, anchor);
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty & /*balance*/ 2 && t_value !== (t_value = /*value*/ ctx[7] + "")) set_data_dev(t, t_value);
+    			if (dirty & /*balance*/ 2 && t_value !== (t_value = /*value*/ ctx[11] + "")) set_data_dev(t, t_value);
     		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(t);
@@ -1536,9 +1560,9 @@ var app = (function () {
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_then_block.name,
+    		id: create_then_block_2.name,
     		type: "then",
-    		source: "(21:34) {value}",
+    		source: "(48:34) {value}",
     		ctx
     	});
 
@@ -1546,12 +1570,12 @@ var app = (function () {
     }
 
     // (1:0) <script>   import { config }
-    function create_pending_block(ctx) {
+    function create_pending_block_2(ctx) {
     	const block = { c: noop, m: noop, p: noop, d: noop };
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_pending_block.name,
+    		id: create_pending_block_2.name,
     		type: "pending",
     		source: "(1:0) <script>   import { config }",
     		ctx
@@ -1560,7 +1584,192 @@ var app = (function () {
     	return block;
     }
 
-    function create_fragment$2(ctx) {
+    // (1:0) <script>   import { config }
+    function create_catch_block_1$1(ctx) {
+    	const block = { c: noop, m: noop, p: noop, d: noop };
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_catch_block_1$1.name,
+    		type: "catch",
+    		source: "(1:0) <script>   import { config }",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (53:36) {value}
+    function create_then_block_1$1(ctx) {
+    	let t_value = /*value*/ ctx[11] + "";
+    	let t;
+
+    	const block = {
+    		c: function create() {
+    			t = text(t_value);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, t, anchor);
+    		},
+    		p: function update(ctx, dirty) {
+    			if (dirty & /*allowance*/ 4 && t_value !== (t_value = /*value*/ ctx[11] + "")) set_data_dev(t, t_value);
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(t);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_then_block_1$1.name,
+    		type: "then",
+    		source: "(53:36) {value}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (1:0) <script>   import { config }
+    function create_pending_block_1$1(ctx) {
+    	const block = { c: noop, m: noop, p: noop, d: noop };
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_pending_block_1$1.name,
+    		type: "pending",
+    		source: "(1:0) <script>   import { config }",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (1:0) <script>   import { config }
+    function create_catch_block$1(ctx) {
+    	const block = { c: noop, m: noop, p: noop, d: noop };
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_catch_block$1.name,
+    		type: "catch",
+    		source: "(1:0) <script>   import { config }",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (56:31)      {#if value <= 0}
+    function create_then_block$1(ctx) {
+    	let if_block_anchor;
+    	let if_block = /*value*/ ctx[11] <= 0 && create_if_block$2(ctx);
+
+    	const block = {
+    		c: function create() {
+    			if (if_block) if_block.c();
+    			if_block_anchor = empty();
+    		},
+    		m: function mount(target, anchor) {
+    			if (if_block) if_block.m(target, anchor);
+    			insert_dev(target, if_block_anchor, anchor);
+    		},
+    		p: function update(ctx, dirty) {
+    			if (/*value*/ ctx[11] <= 0) {
+    				if (if_block) {
+    					if_block.p(ctx, dirty);
+    				} else {
+    					if_block = create_if_block$2(ctx);
+    					if_block.c();
+    					if_block.m(if_block_anchor.parentNode, if_block_anchor);
+    				}
+    			} else if (if_block) {
+    				if_block.d(1);
+    				if_block = null;
+    			}
+    		},
+    		d: function destroy(detaching) {
+    			if (if_block) if_block.d(detaching);
+    			if (detaching) detach_dev(if_block_anchor);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_then_block$1.name,
+    		type: "then",
+    		source: "(56:31)      {#if value <= 0}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (57:4) {#if value <= 0}
+    function create_if_block$2(ctx) {
+    	let p;
+    	let t1;
+    	let button;
+    	let mounted;
+    	let dispose;
+
+    	const block = {
+    		c: function create() {
+    			p = element("p");
+    			p.textContent = "To spend your KTYCAT you need to approve KTYCAT_ERC721 as a spender";
+    			t1 = space();
+    			button = element("button");
+    			button.textContent = "Approve";
+    			add_location(p, file$3, 57, 6, 1597);
+    			add_location(button, file$3, 58, 6, 1678);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, p, anchor);
+    			insert_dev(target, t1, anchor);
+    			insert_dev(target, button, anchor);
+
+    			if (!mounted) {
+    				dispose = listen_dev(button, "click", /*handleApprove*/ ctx[3], false, false, false);
+    				mounted = true;
+    			}
+    		},
+    		p: noop,
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(p);
+    			if (detaching) detach_dev(t1);
+    			if (detaching) detach_dev(button);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block$2.name,
+    		type: "if",
+    		source: "(57:4) {#if value <= 0}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (1:0) <script>   import { config }
+    function create_pending_block$1(ctx) {
+    	const block = { c: noop, m: noop, p: noop, d: noop };
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_pending_block$1.name,
+    		type: "pending",
+    		source: "(1:0) <script>   import { config }",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function create_fragment$3(ctx) {
     	let header;
     	let p0;
     	let t0;
@@ -1581,20 +1790,53 @@ var app = (function () {
     	let promise;
     	let t10;
     	let p4;
-    	let u;
+    	let t11;
+    	let span4;
+    	let promise_1;
+    	let t12;
+    	let promise_2;
+    	let t13;
+    	let p5;
+    	let a;
 
     	let info = {
     		ctx,
     		current: null,
     		token: null,
     		hasCatch: false,
-    		pending: create_pending_block,
-    		then: create_then_block,
-    		catch: create_catch_block,
-    		value: 7
+    		pending: create_pending_block_2,
+    		then: create_then_block_2,
+    		catch: create_catch_block_2,
+    		value: 11
     	};
 
     	handle_promise(promise = /*balance*/ ctx[1], info);
+
+    	let info_1 = {
+    		ctx,
+    		current: null,
+    		token: null,
+    		hasCatch: false,
+    		pending: create_pending_block_1$1,
+    		then: create_then_block_1$1,
+    		catch: create_catch_block_1$1,
+    		value: 11
+    	};
+
+    	handle_promise(promise_1 = /*allowance*/ ctx[2], info_1);
+
+    	let info_2 = {
+    		ctx,
+    		current: null,
+    		token: null,
+    		hasCatch: false,
+    		pending: create_pending_block$1,
+    		then: create_then_block$1,
+    		catch: create_catch_block$1,
+    		value: 11
+    	};
+
+    	handle_promise(promise_2 = /*allowance*/ ctx[2], info_2);
 
     	const block = {
     		c: function create() {
@@ -1620,23 +1862,35 @@ var app = (function () {
     			info.block.c();
     			t10 = space();
     			p4 = element("p");
-    			u = element("u");
-    			u.textContent = "Get KTYCAT tokens from cheapswap.io";
+    			t11 = text("Allowance (KTYCAT): ");
+    			span4 = element("span");
+    			info_1.block.c();
+    			t12 = space();
+    			info_2.block.c();
+    			t13 = space();
+    			p5 = element("p");
+    			a = element("a");
+    			a.textContent = "Get KTYCAT tokens from cheapswap.io";
     			attr_dev(span0, "class", "code");
-    			add_location(span0, file$2, 15, 29, 497);
-    			add_location(p0, file$2, 15, 2, 470);
+    			add_location(span0, file$3, 41, 28, 1094);
+    			add_location(p0, file$3, 40, 2, 1062);
     			attr_dev(span1, "class", "code");
-    			add_location(span1, file$2, 16, 28, 578);
-    			add_location(p1, file$2, 16, 2, 552);
+    			add_location(span1, file$3, 43, 28, 1178);
+    			add_location(p1, file$3, 43, 2, 1152);
     			attr_dev(span2, "class", "code");
-    			add_location(span2, file$2, 17, 24, 654);
-    			add_location(p2, file$2, 17, 2, 632);
+    			add_location(span2, file$3, 44, 24, 1254);
+    			add_location(p2, file$3, 44, 2, 1232);
     			attr_dev(span3, "class", "code");
-    			add_location(span3, file$2, 19, 30, 730);
-    			add_location(p3, file$2, 18, 2, 696);
-    			add_location(u, file$2, 23, 5, 823);
-    			add_location(p4, file$2, 23, 2, 820);
-    			add_location(header, file$2, 14, 0, 459);
+    			add_location(span3, file$3, 46, 30, 1330);
+    			add_location(p3, file$3, 45, 2, 1296);
+    			attr_dev(span4, "class", "code");
+    			add_location(span4, file$3, 51, 24, 1448);
+    			add_location(p4, file$3, 50, 2, 1420);
+    			attr_dev(a, "href", "https://cheapswap.io/");
+    			attr_dev(a, "target", "_blank");
+    			add_location(a, file$3, 62, 4, 1759);
+    			add_location(p5, file$3, 61, 2, 1751);
+    			add_location(header, file$3, 39, 0, 1051);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -1664,7 +1918,18 @@ var app = (function () {
     			info.anchor = null;
     			append_dev(header, t10);
     			append_dev(header, p4);
-    			append_dev(p4, u);
+    			append_dev(p4, t11);
+    			append_dev(p4, span4);
+    			info_1.block.m(span4, info_1.anchor = null);
+    			info_1.mount = () => span4;
+    			info_1.anchor = null;
+    			append_dev(header, t12);
+    			info_2.block.m(header, info_2.anchor = null);
+    			info_2.mount = () => header;
+    			info_2.anchor = t13;
+    			append_dev(header, t13);
+    			append_dev(header, p5);
+    			append_dev(p5, a);
     		},
     		p: function update(new_ctx, [dirty]) {
     			ctx = new_ctx;
@@ -1673,8 +1938,24 @@ var app = (function () {
 
     			if (dirty & /*balance*/ 2 && promise !== (promise = /*balance*/ ctx[1]) && handle_promise(promise, info)) ; else {
     				const child_ctx = ctx.slice();
-    				child_ctx[7] = info.resolved;
+    				child_ctx[11] = info.resolved;
     				info.block.p(child_ctx, dirty);
+    			}
+
+    			info_1.ctx = ctx;
+
+    			if (dirty & /*allowance*/ 4 && promise_1 !== (promise_1 = /*allowance*/ ctx[2]) && handle_promise(promise_1, info_1)) ; else {
+    				const child_ctx = ctx.slice();
+    				child_ctx[11] = info_1.resolved;
+    				info_1.block.p(child_ctx, dirty);
+    			}
+
+    			info_2.ctx = ctx;
+
+    			if (dirty & /*allowance*/ 4 && promise_2 !== (promise_2 = /*allowance*/ ctx[2]) && handle_promise(promise_2, info_2)) ; else {
+    				const child_ctx = ctx.slice();
+    				child_ctx[11] = info_2.resolved;
+    				info_2.block.p(child_ctx, dirty);
     			}
     		},
     		i: noop,
@@ -1682,6 +1963,592 @@ var app = (function () {
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(header);
     			info.block.d();
+    			info.token = null;
+    			info = null;
+    			info_1.block.d();
+    			info_1.token = null;
+    			info_1 = null;
+    			info_2.block.d();
+    			info_2.token = null;
+    			info_2 = null;
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_fragment$3.name,
+    		type: "component",
+    		source: "",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function instance$3($$self, $$props, $$invalidate) {
+    	let account;
+    	let balance;
+    	let allowance;
+    	let $erc20;
+    	let $web3;
+    	let $selectedAccount;
+    	let $connected;
+    	validate_store(erc20, "erc20");
+    	component_subscribe($$self, erc20, $$value => $$invalidate(6, $erc20 = $$value));
+    	validate_store(web3, "web3");
+    	component_subscribe($$self, web3, $$value => $$invalidate(7, $web3 = $$value));
+    	validate_store(selectedAccount, "selectedAccount");
+    	component_subscribe($$self, selectedAccount, $$value => $$invalidate(4, $selectedAccount = $$value));
+    	validate_store(connected, "connected");
+    	component_subscribe($$self, connected, $$value => $$invalidate(5, $connected = $$value));
+    	let { $$slots: slots = {}, $$scope } = $$props;
+    	validate_slots("Header", slots, []);
+
+    	const getEtherBalance = async account => {
+    		const balance = await $erc20.methods.balanceOf(account).call();
+    		return $web3.utils.fromWei(balance, "ether");
+    	};
+
+    	const getEtherAllowance = async account => {
+    		const balance = await $erc20.methods.allowance(account, config.erc721Address).call();
+    		return $web3.utils.fromWei(balance, "ether");
+    	};
+
+    	const approve = async (account, amount) => {
+    		return $erc20.methods.approve(config.erc721Address, amount).send({ from: account });
+    	};
+
+    	const handleApprove = async () => {
+    		const amount = $web3.utils.toWei(await balance, "ether");
+    		await approve(account, amount);
+    	};
+
+    	const writable_props = [];
+
+    	Object.keys($$props).forEach(key => {
+    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== "$$") console.warn(`<Header> was created with unknown prop '${key}'`);
+    	});
+
+    	$$self.$capture_state = () => ({
+    		config,
+    		ethStore,
+    		erc20,
+    		selectedAccount,
+    		web3,
+    		connected,
+    		getEtherBalance,
+    		getEtherAllowance,
+    		approve,
+    		handleApprove,
+    		$erc20,
+    		$web3,
+    		account,
+    		$selectedAccount,
+    		balance,
+    		$connected,
+    		allowance
+    	});
+
+    	$$self.$inject_state = $$props => {
+    		if ("account" in $$props) $$invalidate(0, account = $$props.account);
+    		if ("balance" in $$props) $$invalidate(1, balance = $$props.balance);
+    		if ("allowance" in $$props) $$invalidate(2, allowance = $$props.allowance);
+    	};
+
+    	if ($$props && "$$inject" in $$props) {
+    		$$self.$inject_state($$props.$$inject);
+    	}
+
+    	$$self.$$.update = () => {
+    		if ($$self.$$.dirty & /*$selectedAccount*/ 16) {
+    			$$invalidate(0, account = $selectedAccount || "0x0000000000000000000000000000000000000000");
+    		}
+
+    		if ($$self.$$.dirty & /*$connected, account*/ 33) {
+    			$$invalidate(1, balance = $connected ? getEtherBalance(account) : 0);
+    		}
+
+    		if ($$self.$$.dirty & /*$connected, account*/ 33) {
+    			$$invalidate(2, allowance = $connected ? getEtherAllowance(account) : 0);
+    		}
+    	};
+
+    	return [account, balance, allowance, handleApprove, $selectedAccount, $connected];
+    }
+
+    class Header extends SvelteComponentDev {
+    	constructor(options) {
+    		super(options);
+    		init(this, options, instance$3, create_fragment$3, safe_not_equal, {});
+
+    		dispatch_dev("SvelteRegisterComponent", {
+    			component: this,
+    			tagName: "Header",
+    			options,
+    			id: create_fragment$3.name
+    		});
+    	}
+    }
+
+    const playing = writable(false);
+
+    /* src/Tracks.svelte generated by Svelte v3.37.0 */
+    const file$2 = "src/Tracks.svelte";
+
+    function get_each_context(ctx, list, i) {
+    	const child_ctx = ctx.slice();
+    	child_ctx[11] = list[i];
+    	child_ctx[13] = i;
+    	return child_ctx;
+    }
+
+    // (1:0) <script>   import { playing }
+    function create_catch_block_1(ctx) {
+    	const block = { c: noop, m: noop, p: noop, d: noop };
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_catch_block_1.name,
+    		type: "catch",
+    		source: "(1:0) <script>   import { playing }",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (47:27)    {#await tracks then tracks}
+    function create_then_block(ctx) {
+    	let await_block_anchor;
+    	let promise;
+
+    	let info = {
+    		ctx,
+    		current: null,
+    		token: null,
+    		hasCatch: false,
+    		pending: create_pending_block_1,
+    		then: create_then_block_1,
+    		catch: create_catch_block,
+    		value: 1
+    	};
+
+    	handle_promise(promise = /*tracks*/ ctx[1], info);
+
+    	const block = {
+    		c: function create() {
+    			await_block_anchor = empty();
+    			info.block.c();
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, await_block_anchor, anchor);
+    			info.block.m(target, info.anchor = anchor);
+    			info.mount = () => await_block_anchor.parentNode;
+    			info.anchor = await_block_anchor;
+    		},
+    		p: function update(new_ctx, dirty) {
+    			ctx = new_ctx;
+    			info.ctx = ctx;
+
+    			if (dirty & /*tracks*/ 2 && promise !== (promise = /*tracks*/ ctx[1]) && handle_promise(promise, info)) ; else {
+    				const child_ctx = ctx.slice();
+    				child_ctx[1] = info.resolved;
+    				info.block.p(child_ctx, dirty);
+    			}
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(await_block_anchor);
+    			info.block.d(detaching);
+    			info.token = null;
+    			info = null;
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_then_block.name,
+    		type: "then",
+    		source: "(47:27)    {#await tracks then tracks}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (1:0) <script>   import { playing }
+    function create_catch_block(ctx) {
+    	const block = { c: noop, m: noop, p: noop, d: noop };
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_catch_block.name,
+    		type: "catch",
+    		source: "(1:0) <script>   import { playing }",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (48:29)      {#each tracks as track, i}
+    function create_then_block_1(ctx) {
+    	let each_1_anchor;
+    	let each_value = /*tracks*/ ctx[1];
+    	validate_each_argument(each_value);
+    	let each_blocks = [];
+
+    	for (let i = 0; i < each_value.length; i += 1) {
+    		each_blocks[i] = create_each_block(get_each_context(ctx, each_value, i));
+    	}
+
+    	const block = {
+    		c: function create() {
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].c();
+    			}
+
+    			each_1_anchor = empty();
+    		},
+    		m: function mount(target, anchor) {
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].m(target, anchor);
+    			}
+
+    			insert_dev(target, each_1_anchor, anchor);
+    		},
+    		p: function update(ctx, dirty) {
+    			if (dirty & /*handlePlayTrack, tracks, bought, handleBuyTrack*/ 15) {
+    				each_value = /*tracks*/ ctx[1];
+    				validate_each_argument(each_value);
+    				let i;
+
+    				for (i = 0; i < each_value.length; i += 1) {
+    					const child_ctx = get_each_context(ctx, each_value, i);
+
+    					if (each_blocks[i]) {
+    						each_blocks[i].p(child_ctx, dirty);
+    					} else {
+    						each_blocks[i] = create_each_block(child_ctx);
+    						each_blocks[i].c();
+    						each_blocks[i].m(each_1_anchor.parentNode, each_1_anchor);
+    					}
+    				}
+
+    				for (; i < each_blocks.length; i += 1) {
+    					each_blocks[i].d(1);
+    				}
+
+    				each_blocks.length = each_value.length;
+    			}
+    		},
+    		d: function destroy(detaching) {
+    			destroy_each(each_blocks, detaching);
+    			if (detaching) detach_dev(each_1_anchor);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_then_block_1.name,
+    		type: "then",
+    		source: "(48:29)      {#each tracks as track, i}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (59:10) {:else}
+    function create_else_block$1(ctx) {
+    	let u;
+    	let mounted;
+    	let dispose;
+
+    	const block = {
+    		c: function create() {
+    			u = element("u");
+    			u.textContent = "Buy";
+    			add_location(u, file$2, 59, 12, 1859);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, u, anchor);
+
+    			if (!mounted) {
+    				dispose = listen_dev(
+    					u,
+    					"click",
+    					function () {
+    						if (is_function(/*handleBuyTrack*/ ctx[2](/*track*/ ctx[11].tokenId))) /*handleBuyTrack*/ ctx[2](/*track*/ ctx[11].tokenId).apply(this, arguments);
+    					},
+    					false,
+    					false,
+    					false
+    				);
+
+    				mounted = true;
+    			}
+    		},
+    		p: function update(new_ctx, dirty) {
+    			ctx = new_ctx;
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(u);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_else_block$1.name,
+    		type: "else",
+    		source: "(59:10) {:else}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (57:10) {#if bought.find((item) => item.returnValues.tokenId === track.tokenId)}
+    function create_if_block$1(ctx) {
+    	let u;
+    	let mounted;
+    	let dispose;
+
+    	const block = {
+    		c: function create() {
+    			u = element("u");
+    			u.textContent = "Play";
+    			add_location(u, file$2, 57, 12, 1783);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, u, anchor);
+
+    			if (!mounted) {
+    				dispose = listen_dev(
+    					u,
+    					"click",
+    					function () {
+    						if (is_function(/*handlePlayTrack*/ ctx[3](/*track*/ ctx[11]))) /*handlePlayTrack*/ ctx[3](/*track*/ ctx[11]).apply(this, arguments);
+    					},
+    					false,
+    					false,
+    					false
+    				);
+
+    				mounted = true;
+    			}
+    		},
+    		p: function update(new_ctx, dirty) {
+    			ctx = new_ctx;
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(u);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block$1.name,
+    		type: "if",
+    		source: "(57:10) {#if bought.find((item) => item.returnValues.tokenId === track.tokenId)}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (49:4) {#each tracks as track, i}
+    function create_each_block(ctx) {
+    	let div2;
+    	let p0;
+    	let t0_value = /*track*/ ctx[11].tokenId + "";
+    	let t0;
+    	let t1;
+    	let div0;
+    	let p1;
+    	let t2_value = /*track*/ ctx[11].name + "";
+    	let t2;
+    	let t3;
+    	let p2;
+    	let t4_value = /*track*/ ctx[11].artist + "";
+    	let t4;
+    	let t5;
+    	let div1;
+    	let show_if;
+    	let t6;
+
+    	function func(...args) {
+    		return /*func*/ ctx[5](/*track*/ ctx[11], ...args);
+    	}
+
+    	function select_block_type(ctx, dirty) {
+    		if (show_if == null || dirty & /*bought, tracks*/ 3) show_if = !!/*bought*/ ctx[0].find(func);
+    		if (show_if) return create_if_block$1;
+    		return create_else_block$1;
+    	}
+
+    	let current_block_type = select_block_type(ctx, -1);
+    	let if_block = current_block_type(ctx);
+
+    	const block = {
+    		c: function create() {
+    			div2 = element("div");
+    			p0 = element("p");
+    			t0 = text(t0_value);
+    			t1 = space();
+    			div0 = element("div");
+    			p1 = element("p");
+    			t2 = text(t2_value);
+    			t3 = space();
+    			p2 = element("p");
+    			t4 = text(t4_value);
+    			t5 = space();
+    			div1 = element("div");
+    			if_block.c();
+    			t6 = space();
+    			attr_dev(p0, "class", "number svelte-3y1lee");
+    			add_location(p0, file$2, 50, 8, 1489);
+    			attr_dev(p1, "class", "name svelte-3y1lee");
+    			add_location(p1, file$2, 52, 10, 1567);
+    			attr_dev(p2, "class", "artist svelte-3y1lee");
+    			add_location(p2, file$2, 53, 10, 1610);
+    			attr_dev(div0, "class", "content svelte-3y1lee");
+    			add_location(div0, file$2, 51, 8, 1535);
+    			attr_dev(div1, "class", "btn svelte-3y1lee");
+    			add_location(div1, file$2, 55, 8, 1670);
+    			attr_dev(div2, "class", "track svelte-3y1lee");
+    			add_location(div2, file$2, 49, 6, 1461);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, div2, anchor);
+    			append_dev(div2, p0);
+    			append_dev(p0, t0);
+    			append_dev(div2, t1);
+    			append_dev(div2, div0);
+    			append_dev(div0, p1);
+    			append_dev(p1, t2);
+    			append_dev(div0, t3);
+    			append_dev(div0, p2);
+    			append_dev(p2, t4);
+    			append_dev(div2, t5);
+    			append_dev(div2, div1);
+    			if_block.m(div1, null);
+    			append_dev(div2, t6);
+    		},
+    		p: function update(new_ctx, dirty) {
+    			ctx = new_ctx;
+    			if (dirty & /*tracks*/ 2 && t0_value !== (t0_value = /*track*/ ctx[11].tokenId + "")) set_data_dev(t0, t0_value);
+    			if (dirty & /*tracks*/ 2 && t2_value !== (t2_value = /*track*/ ctx[11].name + "")) set_data_dev(t2, t2_value);
+    			if (dirty & /*tracks*/ 2 && t4_value !== (t4_value = /*track*/ ctx[11].artist + "")) set_data_dev(t4, t4_value);
+
+    			if (current_block_type === (current_block_type = select_block_type(ctx, dirty)) && if_block) {
+    				if_block.p(ctx, dirty);
+    			} else {
+    				if_block.d(1);
+    				if_block = current_block_type(ctx);
+
+    				if (if_block) {
+    					if_block.c();
+    					if_block.m(div1, null);
+    				}
+    			}
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(div2);
+    			if_block.d();
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_each_block.name,
+    		type: "each",
+    		source: "(49:4) {#each tracks as track, i}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (1:0) <script>   import { playing }
+    function create_pending_block_1(ctx) {
+    	const block = { c: noop, m: noop, p: noop, d: noop };
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_pending_block_1.name,
+    		type: "pending",
+    		source: "(1:0) <script>   import { playing }",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (1:0) <script>   import { playing }
+    function create_pending_block(ctx) {
+    	const block = { c: noop, m: noop, p: noop, d: noop };
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_pending_block.name,
+    		type: "pending",
+    		source: "(1:0) <script>   import { playing }",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    function create_fragment$2(ctx) {
+    	let await_block_anchor;
+    	let promise;
+
+    	let info = {
+    		ctx,
+    		current: null,
+    		token: null,
+    		hasCatch: false,
+    		pending: create_pending_block,
+    		then: create_then_block,
+    		catch: create_catch_block_1,
+    		value: 0
+    	};
+
+    	handle_promise(promise = /*bought*/ ctx[0], info);
+
+    	const block = {
+    		c: function create() {
+    			await_block_anchor = empty();
+    			info.block.c();
+    		},
+    		l: function claim(nodes) {
+    			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, await_block_anchor, anchor);
+    			info.block.m(target, info.anchor = anchor);
+    			info.mount = () => await_block_anchor.parentNode;
+    			info.anchor = await_block_anchor;
+    		},
+    		p: function update(new_ctx, [dirty]) {
+    			ctx = new_ctx;
+    			info.ctx = ctx;
+
+    			if (dirty & /*bought*/ 1 && promise !== (promise = /*bought*/ ctx[0]) && handle_promise(promise, info)) ; else {
+    				const child_ctx = ctx.slice();
+    				child_ctx[0] = info.resolved;
+    				info.block.p(child_ctx, dirty);
+    			}
+    		},
+    		i: noop,
+    		o: noop,
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(await_block_anchor);
+    			info.block.d(detaching);
     			info.token = null;
     			info = null;
     		}
@@ -1700,52 +2567,70 @@ var app = (function () {
 
     function instance$2($$self, $$props, $$invalidate) {
     	let account;
-    	let balance;
-    	let $erc20;
-    	let $web3;
+    	let bought;
+    	let tracks;
+    	let $erc721;
     	let $selectedAccount;
-    	let $connected;
-    	validate_store(erc20, "erc20");
-    	component_subscribe($$self, erc20, $$value => $$invalidate(4, $erc20 = $$value));
-    	validate_store(web3, "web3");
-    	component_subscribe($$self, web3, $$value => $$invalidate(5, $web3 = $$value));
+    	let $web3;
+    	validate_store(erc721, "erc721");
+    	component_subscribe($$self, erc721, $$value => $$invalidate(6, $erc721 = $$value));
     	validate_store(selectedAccount, "selectedAccount");
-    	component_subscribe($$self, selectedAccount, $$value => $$invalidate(2, $selectedAccount = $$value));
-    	validate_store(connected, "connected");
-    	component_subscribe($$self, connected, $$value => $$invalidate(3, $connected = $$value));
+    	component_subscribe($$self, selectedAccount, $$value => $$invalidate(4, $selectedAccount = $$value));
+    	validate_store(web3, "web3");
+    	component_subscribe($$self, web3, $$value => $$invalidate(8, $web3 = $$value));
     	let { $$slots: slots = {}, $$scope } = $$props;
-    	validate_slots("Header", slots, []);
+    	validate_slots("Tracks", slots, []);
 
-    	const getEtherBalance = async account => {
-    		const balance = await $erc20.methods.balanceOf(account).call();
-    		return $web3.utils.fromWei(balance, "ether");
+    	const getPastBuyTrack = async () => {
+    		const resp = await $erc721.getPastEvents("BuyTrack", { fromBlock: 12240000, toBlock: "latest" });
+    		return resp.filter(payment => payment.returnValues.addr.toLowerCase() === account.toLowerCase());
+    	};
+
+    	const getTracks = async () => {
+    		const resp = await $erc721.getPastEvents("MintTrack", { fromBlock: 12240000, toBlock: "latest" });
+    		return resp.map(track => ({ ...track.returnValues }));
+    	};
+
+    	const handleBuyTrack = trackId => () => {
+    		trackId = trackId.toString();
+    		const value = $web3.utils.toWei("0.1", "ether");
+    		$erc721.methods.buyTrack(trackId).send({ from: account, value });
+    	};
+
+    	const handlePlayTrack = track => () => {
+    		playing.set(track);
     	};
 
     	const writable_props = [];
 
     	Object.keys($$props).forEach(key => {
-    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== "$$") console.warn(`<Header> was created with unknown prop '${key}'`);
+    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== "$$") console.warn(`<Tracks> was created with unknown prop '${key}'`);
     	});
 
+    	const func = (track, item) => item.returnValues.tokenId === track.tokenId;
+
     	$$self.$capture_state = () => ({
-    		config,
-    		ethStore,
-    		erc20,
-    		selectedAccount,
+    		playing,
     		web3,
     		connected,
-    		getEtherBalance,
-    		$erc20,
-    		$web3,
+    		selectedAccount,
+    		erc721,
+    		getPastBuyTrack,
+    		getTracks,
+    		handleBuyTrack,
+    		handlePlayTrack,
+    		$erc721,
     		account,
     		$selectedAccount,
-    		balance,
-    		$connected
+    		bought,
+    		tracks,
+    		$web3
     	});
 
     	$$self.$inject_state = $$props => {
-    		if ("account" in $$props) $$invalidate(0, account = $$props.account);
-    		if ("balance" in $$props) $$invalidate(1, balance = $$props.balance);
+    		if ("account" in $$props) account = $$props.account;
+    		if ("bought" in $$props) $$invalidate(0, bought = $$props.bought);
+    		if ("tracks" in $$props) $$invalidate(1, tracks = $$props.tracks);
     	};
 
     	if ($$props && "$$inject" in $$props) {
@@ -1753,115 +2638,139 @@ var app = (function () {
     	}
 
     	$$self.$$.update = () => {
-    		if ($$self.$$.dirty & /*$selectedAccount*/ 4) {
-    			$$invalidate(0, account = $selectedAccount || "0x0000000000000000000000000000000000000000");
+    		if ($$self.$$.dirty & /*$selectedAccount*/ 16) {
+    			account = $selectedAccount || "0x0000000000000000000000000000000000000000";
     		}
 
-    		if ($$self.$$.dirty & /*$connected, account*/ 9) {
-    			$$invalidate(1, balance = $connected ? getEtherBalance(account) : 0);
+    		if ($$self.$$.dirty & /*$selectedAccount*/ 16) {
+    			$$invalidate(0, bought = $selectedAccount
+    			? getPastBuyTrack()
+    			: Promise.resolve([]));
+    		}
+
+    		if ($$self.$$.dirty & /*$selectedAccount*/ 16) {
+    			$$invalidate(1, tracks = $selectedAccount ? getTracks() : Promise.resolve([]));
     		}
     	};
 
-    	return [account, balance, $selectedAccount, $connected];
+    	return [bought, tracks, handleBuyTrack, handlePlayTrack, $selectedAccount, func];
     }
 
-    class Header extends SvelteComponentDev {
+    class Tracks extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
     		init(this, options, instance$2, create_fragment$2, safe_not_equal, {});
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
-    			tagName: "Header",
+    			tagName: "Tracks",
     			options,
     			id: create_fragment$2.name
     		});
     	}
     }
 
-    /* src/Tracks.svelte generated by Svelte v3.37.0 */
+    /* src/Player.svelte generated by Svelte v3.37.0 */
+    const file$1 = "src/Player.svelte";
 
-    const file$1 = "src/Tracks.svelte";
-
-    function get_each_context(ctx, list, i) {
-    	const child_ctx = ctx.slice();
-    	child_ctx[1] = list[i];
-    	child_ctx[3] = i;
-    	return child_ctx;
-    }
-
-    // (5:0) {#each tracks as track, i}
-    function create_each_block(ctx) {
-    	let div2;
-    	let p0;
-    	let t0_value = /*i*/ ctx[3] + 1 + "";
-    	let t0;
-    	let t1;
-    	let div0;
-    	let p1;
-    	let t3;
-    	let p2;
-    	let t5;
-    	let div1;
-    	let u;
-    	let t7;
+    // (14:0) {:else}
+    function create_else_block(ctx) {
+    	let p;
 
     	const block = {
     		c: function create() {
-    			div2 = element("div");
-    			p0 = element("p");
-    			t0 = text(t0_value);
-    			t1 = space();
-    			div0 = element("div");
-    			p1 = element("p");
-    			p1.textContent = "Name";
-    			t3 = space();
-    			p2 = element("p");
-    			p2.textContent = "Artist";
-    			t5 = space();
-    			div1 = element("div");
-    			u = element("u");
-    			u.textContent = "Buy";
-    			t7 = space();
-    			attr_dev(p0, "class", "number svelte-3y1lee");
-    			add_location(p0, file$1, 6, 4, 109);
-    			attr_dev(p1, "class", "name svelte-3y1lee");
-    			add_location(p1, file$1, 8, 6, 171);
-    			attr_dev(p2, "class", "artist svelte-3y1lee");
-    			add_location(p2, file$1, 9, 6, 202);
-    			attr_dev(div0, "class", "content svelte-3y1lee");
-    			add_location(div0, file$1, 7, 4, 143);
-    			add_location(u, file$1, 11, 21, 263);
-    			attr_dev(div1, "class", "btn svelte-3y1lee");
-    			add_location(div1, file$1, 11, 4, 246);
-    			attr_dev(div2, "class", "track svelte-3y1lee");
-    			add_location(div2, file$1, 5, 2, 85);
+    			p = element("p");
+    			p.textContent = "Select a track to play";
+    			add_location(p, file$1, 14, 2, 319);
     		},
     		m: function mount(target, anchor) {
-    			insert_dev(target, div2, anchor);
-    			append_dev(div2, p0);
-    			append_dev(p0, t0);
-    			append_dev(div2, t1);
-    			append_dev(div2, div0);
-    			append_dev(div0, p1);
-    			append_dev(div0, t3);
-    			append_dev(div0, p2);
-    			append_dev(div2, t5);
-    			append_dev(div2, div1);
-    			append_dev(div1, u);
-    			append_dev(div2, t7);
+    			insert_dev(target, p, anchor);
     		},
     		p: noop,
     		d: function destroy(detaching) {
-    			if (detaching) detach_dev(div2);
+    			if (detaching) detach_dev(p);
     		}
     	};
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_each_block.name,
-    		type: "each",
-    		source: "(5:0) {#each tracks as track, i}",
+    		id: create_else_block.name,
+    		type: "else",
+    		source: "(14:0) {:else}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (5:0) {#if $playing.name}
+    function create_if_block(ctx) {
+    	let p;
+    	let t0;
+    	let t1_value = /*$playing*/ ctx[0].name + "";
+    	let t1;
+    	let br;
+    	let t2;
+    	let t3_value = /*$playing*/ ctx[0].artist + "";
+    	let t3;
+    	let t4;
+    	let audio;
+    	let source;
+    	let source_src_value;
+    	let t5;
+
+    	const block = {
+    		c: function create() {
+    			p = element("p");
+    			t0 = text("Name: ");
+    			t1 = text(t1_value);
+    			br = element("br");
+    			t2 = text("\n    Artist: ");
+    			t3 = text(t3_value);
+    			t4 = space();
+    			audio = element("audio");
+    			source = element("source");
+    			t5 = text("\n    Your browser does not support the audio tag.");
+    			add_location(br, file$1, 6, 25, 121);
+    			add_location(p, file$1, 5, 2, 92);
+    			if (source.src !== (source_src_value = "songs/" + /*$playing*/ ctx[0].name + ".mp3")) attr_dev(source, "src", source_src_value);
+    			attr_dev(source, "type", "audio/mpeg");
+    			add_location(source, file$1, 10, 4, 188);
+    			audio.controls = true;
+    			add_location(audio, file$1, 9, 2, 167);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, p, anchor);
+    			append_dev(p, t0);
+    			append_dev(p, t1);
+    			append_dev(p, br);
+    			append_dev(p, t2);
+    			append_dev(p, t3);
+    			insert_dev(target, t4, anchor);
+    			insert_dev(target, audio, anchor);
+    			append_dev(audio, source);
+    			append_dev(audio, t5);
+    		},
+    		p: function update(ctx, dirty) {
+    			if (dirty & /*$playing*/ 1 && t1_value !== (t1_value = /*$playing*/ ctx[0].name + "")) set_data_dev(t1, t1_value);
+    			if (dirty & /*$playing*/ 1 && t3_value !== (t3_value = /*$playing*/ ctx[0].artist + "")) set_data_dev(t3, t3_value);
+
+    			if (dirty & /*$playing*/ 1 && source.src !== (source_src_value = "songs/" + /*$playing*/ ctx[0].name + ".mp3")) {
+    				attr_dev(source, "src", source_src_value);
+    			}
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(p);
+    			if (detaching) detach_dev(t4);
+    			if (detaching) detach_dev(audio);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block.name,
+    		type: "if",
+    		source: "(5:0) {#if $playing.name}",
     		ctx
     	});
 
@@ -1869,39 +2778,46 @@ var app = (function () {
     }
 
     function create_fragment$1(ctx) {
-    	let each_1_anchor;
-    	let each_value = /*tracks*/ ctx[0];
-    	validate_each_argument(each_value);
-    	let each_blocks = [];
+    	let if_block_anchor;
 
-    	for (let i = 0; i < each_value.length; i += 1) {
-    		each_blocks[i] = create_each_block(get_each_context(ctx, each_value, i));
+    	function select_block_type(ctx, dirty) {
+    		if (/*$playing*/ ctx[0].name) return create_if_block;
+    		return create_else_block;
     	}
+
+    	let current_block_type = select_block_type(ctx);
+    	let if_block = current_block_type(ctx);
 
     	const block = {
     		c: function create() {
-    			for (let i = 0; i < each_blocks.length; i += 1) {
-    				each_blocks[i].c();
-    			}
-
-    			each_1_anchor = empty();
+    			if_block.c();
+    			if_block_anchor = empty();
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
     		},
     		m: function mount(target, anchor) {
-    			for (let i = 0; i < each_blocks.length; i += 1) {
-    				each_blocks[i].m(target, anchor);
-    			}
-
-    			insert_dev(target, each_1_anchor, anchor);
+    			if_block.m(target, anchor);
+    			insert_dev(target, if_block_anchor, anchor);
     		},
-    		p: noop,
+    		p: function update(ctx, [dirty]) {
+    			if (current_block_type === (current_block_type = select_block_type(ctx)) && if_block) {
+    				if_block.p(ctx, dirty);
+    			} else {
+    				if_block.d(1);
+    				if_block = current_block_type(ctx);
+
+    				if (if_block) {
+    					if_block.c();
+    					if_block.m(if_block_anchor.parentNode, if_block_anchor);
+    				}
+    			}
+    		},
     		i: noop,
     		o: noop,
     		d: function destroy(detaching) {
-    			destroy_each(each_blocks, detaching);
-    			if (detaching) detach_dev(each_1_anchor);
+    			if_block.d(detaching);
+    			if (detaching) detach_dev(if_block_anchor);
     		}
     	};
 
@@ -1917,27 +2833,29 @@ var app = (function () {
     }
 
     function instance$1($$self, $$props, $$invalidate) {
+    	let $playing;
+    	validate_store(playing, "playing");
+    	component_subscribe($$self, playing, $$value => $$invalidate(0, $playing = $$value));
     	let { $$slots: slots = {}, $$scope } = $$props;
-    	validate_slots("Tracks", slots, []);
-    	const tracks = Array(10).fill(0);
+    	validate_slots("Player", slots, []);
     	const writable_props = [];
 
     	Object.keys($$props).forEach(key => {
-    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== "$$") console.warn(`<Tracks> was created with unknown prop '${key}'`);
+    		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== "$$") console.warn(`<Player> was created with unknown prop '${key}'`);
     	});
 
-    	$$self.$capture_state = () => ({ tracks });
-    	return [tracks];
+    	$$self.$capture_state = () => ({ playing, $playing });
+    	return [$playing];
     }
 
-    class Tracks extends SvelteComponentDev {
+    class Player extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
     		init(this, options, instance$1, create_fragment$1, safe_not_equal, {});
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
-    			tagName: "Tracks",
+    			tagName: "Player",
     			options,
     			id: create_fragment$1.name
     		});
@@ -1950,34 +2868,64 @@ var app = (function () {
     function create_fragment(ctx) {
     	let main;
     	let h1;
+    	let img;
+    	let img_src_value;
+    	let t0;
     	let t1;
+    	let p;
+    	let a;
+    	let t3;
     	let header;
-    	let t2;
-    	let h2;
     	let t4;
+    	let h20;
+    	let t6;
+    	let player;
+    	let t7;
+    	let h21;
+    	let t9;
     	let tracks;
     	let current;
     	header = new Header({ $$inline: true });
+    	player = new Player({ $$inline: true });
     	tracks = new Tracks({ $$inline: true });
 
     	const block = {
     		c: function create() {
     			main = element("main");
     			h1 = element("h1");
-    			h1.textContent = "😻 Headphone Kitty Cat";
+    			img = element("img");
+    			t0 = text("Headphone Kitty Cat");
     			t1 = space();
+    			p = element("p");
+    			a = element("a");
+    			a.textContent = "What is this? Read the README.md";
+    			t3 = space();
     			create_component(header.$$.fragment);
-    			t2 = space();
-    			h2 = element("h2");
-    			h2.textContent = "Tracks";
     			t4 = space();
+    			h20 = element("h2");
+    			h20.textContent = "Now Playing";
+    			t6 = space();
+    			create_component(player.$$.fragment);
+    			t7 = space();
+    			h21 = element("h2");
+    			h21.textContent = "Tracks";
+    			t9 = space();
     			create_component(tracks.$$.fragment);
-    			attr_dev(h1, "class", "svelte-1psfygo");
-    			add_location(h1, file, 18, 2, 412);
-    			attr_dev(h2, "class", "svelte-1psfygo");
-    			add_location(h2, file, 20, 2, 459);
-    			attr_dev(main, "class", "svelte-1psfygo");
-    			add_location(main, file, 17, 0, 403);
+    			attr_dev(img, "class", "logo svelte-s9hkgt");
+    			if (img.src !== (img_src_value = "/logo.png")) attr_dev(img, "src", img_src_value);
+    			add_location(img, file, 18, 6, 457);
+    			attr_dev(h1, "class", "svelte-s9hkgt");
+    			add_location(h1, file, 18, 2, 453);
+    			attr_dev(a, "href", "https://github.com/GeraldHost/HeadphoneKittyCat");
+    			attr_dev(a, "target", "_blank");
+    			add_location(a, file, 20, 4, 528);
+    			add_location(p, file, 19, 2, 520);
+    			attr_dev(h20, "class", "svelte-s9hkgt");
+    			add_location(h20, file, 25, 2, 673);
+    			attr_dev(h21, "class", "svelte-s9hkgt");
+    			add_location(h21, file, 27, 2, 709);
+    			attr_dev(main, "class", "svelte-s9hkgt");
+    			add_location(main, file, 17, 0, 444);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -1985,11 +2933,20 @@ var app = (function () {
     		m: function mount(target, anchor) {
     			insert_dev(target, main, anchor);
     			append_dev(main, h1);
+    			append_dev(h1, img);
+    			append_dev(h1, t0);
     			append_dev(main, t1);
+    			append_dev(main, p);
+    			append_dev(p, a);
+    			append_dev(main, t3);
     			mount_component(header, main, null);
-    			append_dev(main, t2);
-    			append_dev(main, h2);
     			append_dev(main, t4);
+    			append_dev(main, h20);
+    			append_dev(main, t6);
+    			mount_component(player, main, null);
+    			append_dev(main, t7);
+    			append_dev(main, h21);
+    			append_dev(main, t9);
     			mount_component(tracks, main, null);
     			current = true;
     		},
@@ -1997,17 +2954,20 @@ var app = (function () {
     		i: function intro(local) {
     			if (current) return;
     			transition_in(header.$$.fragment, local);
+    			transition_in(player.$$.fragment, local);
     			transition_in(tracks.$$.fragment, local);
     			current = true;
     		},
     		o: function outro(local) {
     			transition_out(header.$$.fragment, local);
+    			transition_out(player.$$.fragment, local);
     			transition_out(tracks.$$.fragment, local);
     			current = false;
     		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(main);
     			destroy_component(header);
+    			destroy_component(player);
     			destroy_component(tracks);
     		}
     	};
@@ -2044,6 +3004,7 @@ var app = (function () {
     		onMount,
     		Header,
     		Tracks,
+    		Player,
     		ethStore,
     		enable,
     		enableBrowser

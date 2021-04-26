@@ -1,17 +1,69 @@
 <script>
-  const tracks = Array(10).fill(0);
+  import { playing } from "./utils/player-store.js";
+  import { web3, connected, selectedAccount, erc721 } from "./utils/web3-store";
+  
+  const getPastBuyTrack = async () => {
+    const resp = await $erc721.getPastEvents("BuyTrack", {
+      fromBlock: 12240000,
+      toBlock: "latest",
+    });
+    return resp.filter(
+      (payment) =>
+        payment.returnValues.addr.toLowerCase() === account.toLowerCase()
+    );
+  };
+
+  const getTracks = async () => {
+    const resp = await $erc721.getPastEvents("MintTrack", {
+      fromBlock: 12240000,
+      toBlock: "latest",
+    });
+    return resp.map((track) => ({
+      ...track.returnValues,
+    }));
+  };
+
+  $: account = $selectedAccount || "0x0000000000000000000000000000000000000000";
+  $: bought = $selectedAccount ? getPastBuyTrack() : Promise.resolve([]);
+  $: tracks = $selectedAccount ? getTracks() : Promise.resolve([]);
+
+  const handleBuyTrack = (trackId) => () => {
+    trackId = trackId.toString();
+    const value = $web3.utils.toWei("0.1", "ether");
+    $erc721.methods.buyTrack(trackId).send({ from: account, value });
+  };
+
+  const handlePlayTrack = (track) => () => {
+    playing.set(track);
+  };
+
+  //const handleMintTrack = () => {
+  //  $erc721.methods
+  //    .mintTrack("Kitty", "Kitty Cat ft(headphones)", "http://fake-streaming")
+  //    .send({ from: account });
+  //};
 </script>
 
-{#each tracks as track, i}
-  <div class="track">
-    <p class="number">{i + 1}</p>
-    <div class="content">
-      <p class="name">Name</p>
-      <p class="artist">Artist</p>
-    </div>
-    <div class="btn"><u>Buy</u></div>
-  </div>
-{/each}
+{#await bought then bought}
+  {#await tracks then tracks}
+    {#each tracks as track, i}
+      <div class="track">
+        <p class="number">{track.tokenId}</p>
+        <div class="content">
+          <p class="name">{track.name}</p>
+          <p class="artist">{track.artist}</p>
+        </div>
+        <div class="btn">
+          {#if bought.find((item) => item.returnValues.tokenId === track.tokenId)}
+            <u on:click={handlePlayTrack(track)}>Play</u>
+          {:else}
+            <u on:click={handleBuyTrack(track.tokenId)}>Buy</u>
+          {/if}
+        </div>
+      </div>
+    {/each}
+  {/await}
+{/await}
 
 <style>
   .track {
