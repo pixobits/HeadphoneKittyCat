@@ -2117,7 +2117,7 @@ var app = (function () {
     	return block;
     }
 
-    // (47:27)    {#await tracks then tracks}
+    // (52:27)    {#await tracks then tracks}
     function create_then_block(ctx) {
     	let await_block_anchor;
     	let promise;
@@ -2168,7 +2168,7 @@ var app = (function () {
     		block,
     		id: create_then_block.name,
     		type: "then",
-    		source: "(47:27)    {#await tracks then tracks}",
+    		source: "(52:27)    {#await tracks then tracks}",
     		ctx
     	});
 
@@ -2190,7 +2190,7 @@ var app = (function () {
     	return block;
     }
 
-    // (48:29)      {#each tracks as track, i}
+    // (53:29)      {#each tracks as track, i}
     function create_then_block_1(ctx) {
     	let each_1_anchor;
     	let each_value = /*tracks*/ ctx[1];
@@ -2251,14 +2251,14 @@ var app = (function () {
     		block,
     		id: create_then_block_1.name,
     		type: "then",
-    		source: "(48:29)      {#each tracks as track, i}",
+    		source: "(53:29)      {#each tracks as track, i}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (59:10) {:else}
+    // (64:10) {:else}
     function create_else_block$1(ctx) {
     	let u;
     	let mounted;
@@ -2268,7 +2268,7 @@ var app = (function () {
     		c: function create() {
     			u = element("u");
     			u.textContent = "Buy";
-    			add_location(u, file$2, 59, 12, 1859);
+    			add_location(u, file$2, 64, 12, 2201);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, u, anchor);
@@ -2302,14 +2302,14 @@ var app = (function () {
     		block,
     		id: create_else_block$1.name,
     		type: "else",
-    		source: "(59:10) {:else}",
+    		source: "(64:10) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (57:10) {#if bought.find((item) => item.returnValues.tokenId === track.tokenId)}
+    // (62:10) {#if bought.find((item) => item.returnValues.tokenId === track.tokenId)}
     function create_if_block$1(ctx) {
     	let u;
     	let mounted;
@@ -2319,7 +2319,7 @@ var app = (function () {
     		c: function create() {
     			u = element("u");
     			u.textContent = "Play";
-    			add_location(u, file$2, 57, 12, 1783);
+    			add_location(u, file$2, 62, 12, 2125);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, u, anchor);
@@ -2353,14 +2353,14 @@ var app = (function () {
     		block,
     		id: create_if_block$1.name,
     		type: "if",
-    		source: "(57:10) {#if bought.find((item) => item.returnValues.tokenId === track.tokenId)}",
+    		source: "(62:10) {#if bought.find((item) => item.returnValues.tokenId === track.tokenId)}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (49:4) {#each tracks as track, i}
+    // (54:4) {#each tracks as track, i}
     function create_each_block(ctx) {
     	let div2;
     	let p0;
@@ -2410,17 +2410,17 @@ var app = (function () {
     			if_block.c();
     			t6 = space();
     			attr_dev(p0, "class", "number svelte-3y1lee");
-    			add_location(p0, file$2, 50, 8, 1489);
+    			add_location(p0, file$2, 55, 8, 1831);
     			attr_dev(p1, "class", "name svelte-3y1lee");
-    			add_location(p1, file$2, 52, 10, 1567);
+    			add_location(p1, file$2, 57, 10, 1909);
     			attr_dev(p2, "class", "artist svelte-3y1lee");
-    			add_location(p2, file$2, 53, 10, 1610);
+    			add_location(p2, file$2, 58, 10, 1952);
     			attr_dev(div0, "class", "content svelte-3y1lee");
-    			add_location(div0, file$2, 51, 8, 1535);
+    			add_location(div0, file$2, 56, 8, 1877);
     			attr_dev(div1, "class", "btn svelte-3y1lee");
-    			add_location(div1, file$2, 55, 8, 1670);
+    			add_location(div1, file$2, 60, 8, 2012);
     			attr_dev(div2, "class", "track svelte-3y1lee");
-    			add_location(div2, file$2, 49, 6, 1461);
+    			add_location(div2, file$2, 54, 6, 1803);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div2, anchor);
@@ -2466,7 +2466,7 @@ var app = (function () {
     		block,
     		id: create_each_block.name,
     		type: "each",
-    		source: "(49:4) {#each tracks as track, i}",
+    		source: "(54:4) {#each tracks as track, i}",
     		ctx
     	});
 
