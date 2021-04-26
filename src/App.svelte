@@ -4,7 +4,8 @@
   import Tracks from "./Tracks.svelte";
   import Player from "./Player.svelte";
 
-  import { ethStore } from "./utils/web3-store";
+  import { ethStore, chainId } from "./utils/web3-store";
+  $: console.log($chainId);
 
   const enable = () => ethStore.setProvider("https://node.cheapeth.org/rpc");
   const enableBrowser = () => ethStore.setBrowserProvider();
@@ -16,6 +17,12 @@
 </script>
 
 <main>
+  {#if $chainId !== 777}
+    <p class="notice">Make sure you are connected to the cheapeth network</p>
+  {/if}
+  {#if !window.ethereum}
+    <p class="notice">Make sure you have meta mask installed</p>
+  {/if}
   <h1><img class="logo" src="/logo.png" />Headphone Kitty Cat</h1>
   <p>
     <a href="https://github.com/GeraldHost/HeadphoneKittyCat" target="_blank"
@@ -42,9 +49,11 @@
     text-transform: uppercase;
     font-weight: 100;
   }
+
   h1 {
     font-size: 3em;
   }
+
   h2 {
     font-size: 2em;
   }
@@ -62,5 +71,12 @@
     color: rgba(0, 0, 0, 0.5);
     padding: 8px;
     font-family: monospace;
+  }
+
+  .notice {
+    background: #ffcc4c;
+    border-radius: 4px;
+    color: black;
+    padding: 10px;
   }
 </style>
